@@ -60,8 +60,8 @@ resource "aws_instance" "server" {
               #!/bin/bash
               sudo apt-get update
               sudo apt-get install -y docker.io
-              sudo systemctl enable docker
               sudo systemctl start docker
+              sleep 30
               sudo docker run -d -p 5000:5000 aaren17/devops-demo:latest
               EOF
 }
