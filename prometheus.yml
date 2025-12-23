@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 5s  # Check for new data every 5 seconds
+
+scrape_configs:
+  # Job 1: Monitor YOUR Python App
+  - job_name: 'backend-api'
+    static_configs:
+      - targets: ['backend-api:5000']  
+      # Note: We use the SERVICE NAME from docker-compose, not "localhost"
+
+  # Job 2: Monitor Prometheus itself (Health Check)
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Job 3: Monitor the Hardware (Node Exporter)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']

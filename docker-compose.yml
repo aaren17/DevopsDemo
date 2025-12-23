@@ -1,0 +1,56 @@
+
+services:
+  # 1. YOUR APP (The Python Code)
+  backend-api:
+    build: .                        # Build the Dockerfile in this folder
+    container_name: backend-api     # Name used by Prometheus to find it
+    ports:
+      - "5000:5000"                 # Open port 5000
+    networks:
+      - monitoring                  # Connect to the shared network
+
+  # 2. PROMETHEUS (The Data Collector)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      # Mount the config file (CRITICAL STEP)
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      # Save data permanently so it doesn't vanish on restart
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring
+
+  # 3. GRAFANA (The Dashboard)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Default login
+    networks:
+      - monitoring
+
+  # 4. NODE EXPORTER (Hardware Monitor)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+
+# Create the shared network
+networks:
+  monitoring:
+    driver: bridge
+
+# Create the persistent storage areas
+volumes:
+  prometheus-data:
+  grafana-data:
