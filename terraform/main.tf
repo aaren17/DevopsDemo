@@ -2,7 +2,7 @@ terraform {
   backend "s3" {
     bucket = "devops-demo-state-1" # <--- REPLACE THIS WITH YOUR BUCKET NAME
     key    = "terraform.tfstate"          # Keep this exactly as is
-    region = "us-east-1"                  # Keep this as is (unless you used a different region)
+    region = "ap-southeast-1"                  # Keep this as is (unless you used a different region)
   }
 }
 
