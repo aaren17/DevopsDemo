@@ -7,7 +7,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = "ap-southeast-1"
 }
 
 # 1. THE FIREWALL (Open Port 5000)
