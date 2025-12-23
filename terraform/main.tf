@@ -59,25 +59,21 @@ resource "aws_instance" "server" {
   user_data = <<-EOF
               #!/bin/bash
               
-              # 1. WAIT for the system to finish auto-updates (The Fix)
-              echo "Waiting for apt lock..."
-              while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
-                 sleep 5
-              done
-              echo "Apt lock released."
+              # 1. WAIT for system updates to finish (The "Apt Lock" Fix)
+              echo "Waiting for system updates..."
+              sleep 60 
 
               # 2. Install Docker
               sudo apt-get update
               sudo apt-get install -y docker.io
               
-              # 3. Start Docker and Wait
+              # 3. Start Docker and WAIT (The "Race Condition" Fix)
               sudo systemctl start docker
               sudo systemctl enable docker
-              sleep 30  # Wait for Docker Daemon to wake up
+              echo "Waiting for Docker Daemon..."
+              sleep 30
               
-              # 4. Run Containers
-              sudo docker run -d -p 5000:5000 aaren17/devops-demo:latest
-              sudo docker run -d -p 3000:3000 grafana/grafana
-              sudo docker run -d -p 9090:9090 prom/prometheus
+              # 4. Run Containers (Now safe!)
+              sudo docker run -d -p 5000:5000 --name myapp aaren17/devops-demo:latest
               EOF
 }
