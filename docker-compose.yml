@@ -2,7 +2,7 @@
 services:
   # 1. YOUR APP (The Python Code)
   backend-api:
-    build: .                        # Build the Dockerfile in this folder
+    image: aaren17/devops-demo:latest                       # Build the Dockerfile in this folder
     container_name: backend-api     # Name used by Prometheus to find it
     ports:
       - "5000:5000"                 # Open port 5000

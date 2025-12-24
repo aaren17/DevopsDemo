@@ -69,24 +69,29 @@ resource "aws_instance" "server" {
   # Corrected User Data to install Docker + Docker Compose Plugin
   user_data = <<-EOF
               #!/bin/bash
-              sudo apt-get update -y
-              sudo apt-get install -y ca-certificates curl gnupg lsb-release
+              apt-get update -y
+              apt-get install -y ca-certificates curl gnupg lsb-release
 
-              # Add Docker's official GPG key
-              sudo mkdir -m 0755 -d /etc/apt/keyrings
-              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+              # 2. Add Docker's Official GPG Key
+              install -m 0755 -d /etc/apt/keyrings
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
+              
+              # CRITICAL FIX: Give read permissions to the key (Fixes NO_PUBKEY error)
+              chmod a+r /etc/apt/keyrings/docker.gpg
 
-              # Add the repository
-              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+              # 3. Add the Docker Repository (Fixed incomplete line)
+              echo \
+                "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+                $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-              # Install Docker Engine and the Compose Plugin
-              sudo apt-get update -y
-              sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+              # 4. Install Docker Engine and the Compose Plugin
+              apt-get update -y
+              apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-              # Set permissions so GitHub Actions doesn't need 'sudo'
-              sudo systemctl start docker
-              sudo systemctl enable docker
-              sudo usermod -aG docker ubuntu
+              # 5. Enable Docker and set permissions for the 'ubuntu' user
+              systemctl start docker
+              systemctl enable docker
+              usermod -aG docker ubuntu
               EOF
 }
 # ... (Previous EIP association)

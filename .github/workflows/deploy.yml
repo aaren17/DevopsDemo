@@ -44,7 +44,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 300s # Patiently waits for the SSH port to open
-          source: "docker-compose.yml"
+          source: "docker-compose.yml,prometheus.yml"
           target: "/home/ubuntu/"
 
       # REFRESH
