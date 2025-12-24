@@ -62,13 +62,27 @@ resource "aws_instance" "server" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t2.micro"
   vpc_security_group_ids = [aws_security_group.sg.id]
-  key_name               = "my-key" # Ensure this matches your imported AWS key name
+  key_name               = "my-key"
 
+  # IMPROVED USER_DATA: Installs both Docker and the Compose Plugin
   user_data = <<-EOF
               #!/bin/bash
-              sudo apt-get update
-              sudo apt-get install -y docker.io
+              # 1. Update and install prerequisites
+              sudo apt-get update -y
+              sudo apt-get install -y ca-certificates curl gnupg lsb-release
+
+              # 2. Add Docker's official GPG key and repository
+              sudo mkdir -m 0755 -d /etc/apt/keyrings
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+              # 3. Install Docker Engine AND the Compose Plugin
+              sudo apt-get update -y
+              sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+              # 4. Permissions for GitHub Actions
               sudo systemctl start docker
+              sudo systemctl enable docker
               sudo usermod -aG docker ubuntu
               EOF
 }
