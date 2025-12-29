@@ -1,14 +1,13 @@
-name: "CI/CD Pipeline"
+name: CI/CD Pipeline
 
 on:
   push:
     branches: ["main"]
 
 jobs:
-  deploy:
+  build-test-push:
     runs-on: ubuntu-latest
     steps:
-      # 1. SETUP & BUILD
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -18,41 +17,31 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push
+      # --- 1. BUILD (Includes your Code + Tests) ---
+      - name: Build Docker Image
+        run: docker build -t test-image:latest .
+
+      # --- 2. TEST (Inside the container) ---
+      - name: Run Unit Tests
+        run: docker run --rm test-image:latest python -m pytest
+
+      # --- 3. PUSH (Only if tests passed) ---
+      - name: Push to Docker Hub
         run: |
-          docker build -t aaren17/devops-demo:latest .
+          docker tag test-image:latest aaren17/devops-demo:latest
           docker push aaren17/devops-demo:latest
 
-      # 2. SMART WAIT (Replaces sleep 60)
-      - name: Wait for SSH Reachability
-        timeout-minutes: 2
-        run: |
-          while ! nc -z ${{ secrets.EC2_HOST }} 22; do
-            sleep 5
-          done
-
-      # 3. DEPLOY FILES
-      - name: Copy Files
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml,prometheus.yml"
-          target: "/home/ubuntu/"
-
-      # 4. START APPLICATION
-      - name: Deploy App
+  deploy:
+    needs: build-test-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Ensure Docker installation is actually finished
-            sudo cloud-init status --wait
-            
-            # Run the app
             cd /home/ubuntu
             docker compose pull
             docker compose up -d

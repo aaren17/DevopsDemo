@@ -1,2 +1,2 @@
-flask
 prometheus-flask-exporter
+pytest
