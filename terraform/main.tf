@@ -42,7 +42,7 @@ resource "aws_security_group" "sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  ## For rabbitmq
+  ## For rabbitmq 15672 management port
   ingress {
     from_port   = 15672
     to_port     = 15672
