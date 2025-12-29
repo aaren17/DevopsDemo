@@ -1,29 +1,45 @@
-
 services:
-  # 1. YOUR APP (The Python Code)
+  # 1. YOUR BACKEND API (Downloaded from Docker Hub)
   backend-api:
-    image: aaren17/devops-demo:latest                       # Build the Dockerfile in this folder
-    container_name: backend-api     # Name used by Prometheus to find it
+    # IMPORTANT: On the server, this MUST point to Hub, not 'build: .'
+    image: aaren17/devops-demo:latest
+    container_name: backend-api
     ports:
-      - "5000:5000"                 # Open port 5000
+      - "5000:5000"
+    # Kept on the same network so it can reach 'rabbitmq' by name
     networks:
-      - monitoring                  # Connect to the shared network
+      - monitoring
+    # Tell the app where RabbitMQ is (optional but good practice)
+    environment:
+      - RABBITMQ_HOST=rabbitmq
 
-  # 2. PROMETHEUS (The Data Collector)
+  # 2. NEW: RABBITMQ (The Message Broker)
+  rabbitmq:
+    # Use the 'management' tag to get the web UI plugin pre-installed
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # Main port for your Python app to send/receive messages
+      - "15672:15672" # Management UI port (website for humans)
+    networks:
+      - monitoring    # Must be on the same network as backend-api
+    # CRITICAL DEVOPS TASK: Persist data so queues survive restarts
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # 3. PROMETHEUS (Monitoring)
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     ports:
       - "9090:9090"
     volumes:
-      # Mount the config file (CRITICAL STEP)
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      # Save data permanently so it doesn't vanish on restart
       - prometheus-data:/prometheus
     networks:
       - monitoring
 
-  # 3. GRAFANA (The Dashboard)
+  # 4. GRAFANA (Dashboard)
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -32,11 +48,11 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin  # Default login
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     networks:
       - monitoring
 
-  # 4. NODE EXPORTER (Hardware Monitor)
+  # 5. NODE EXPORTER (Hardware Stats)
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
@@ -45,12 +61,12 @@ services:
     networks:
       - monitoring
 
-# Create the shared network
 networks:
   monitoring:
     driver: bridge
 
-# Create the persistent storage areas
+# Define the new volume for RabbitMQ persistence
 volumes:
   prometheus-data:
   grafana-data:
+  rabbitmq_data: # <--- NEW Volume added here
