@@ -5,6 +5,7 @@ on:
     branches: ["main"]
 
 jobs:
+  # --- JOB 1: BUILD, TEST, AND PUSH (The Docker Way) ---
   build-test-push:
     runs-on: ubuntu-latest
     steps:
@@ -17,31 +18,58 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # --- 1. BUILD (Includes your Code + Tests) ---
+      # 1. Build the image (Contains Code + Tests)
       - name: Build Docker Image
         run: docker build -t test-image:latest .
 
-      # --- 2. TEST (Inside the container) ---
+      # 2. Run Tests (Inside the container we just built)
       - name: Run Unit Tests
         run: docker run --rm test-image:latest python -m pytest
 
-      # --- 3. PUSH (Only if tests passed) ---
+      # 3. Push (Only if tests passed)
       - name: Push to Docker Hub
         run: |
           docker tag test-image:latest aaren17/devops-demo:latest
           docker push aaren17/devops-demo:latest
 
+  # --- JOB 2: DEPLOY (Your Robust Setup) ---
   deploy:
-    needs: build-test-push
+    needs: build-test-push  # Wait for tests to pass
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to EC2
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. SMART WAIT (Kept your logic)
+      - name: Wait for SSH Reachability
+        timeout-minutes: 2
+        run: |
+          while ! nc -z ${{ secrets.EC2_HOST }} 22; do
+            sleep 5
+          done
+
+      # 2. COPY FILES (Restored Prometheus & Compose)
+      - name: Copy Files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml,prometheus.yml"
+          target: "/home/ubuntu/"
+
+      # 3. START APPLICATION (Restored Cloud-init check)
+      - name: Deploy App
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Ensure instance is fully ready
+            sudo cloud-init status --wait
+            
+            # Pull the image we just pushed in Job 1
             cd /home/ubuntu
             docker compose pull
             docker compose up -d
