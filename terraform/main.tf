@@ -73,6 +73,10 @@ resource "aws_instance" "server" {
   vpc_security_group_ids = [aws_security_group.sg.id]
   key_name               = "my-key"
 
+  tags = {
+    Name = "DevOps-Server-v2"
+  }
+  
   # Corrected User Data to install Docker + Docker Compose Plugin
   user_data = <<-EOF
               #!/bin/bash
