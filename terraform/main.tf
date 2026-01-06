@@ -74,7 +74,7 @@ resource "aws_instance" "server" {
   key_name               = "my-key"
 
   tags = {
-    Name = "DevOps-Server-v4"
+    Name = "DevOps-Server-v5"
   }
   
   # Corrected User Data to install Docker + Docker Compose Plugin
