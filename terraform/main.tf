@@ -95,5 +95,5 @@ resource "aws_instance" "server" {
 
 resource "aws_eip_association" "eip_assoc" {
   instance_id   = aws_instance.server.id
-  allocation_id = "eipalloc-0faf631d22521d0ab" # From your image_3a45fd.png
+  allocation_id = "eipalloc-0802281c2e410c660" # From your image_3a45fd.png
 }
